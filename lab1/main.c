@@ -72,17 +72,40 @@ static Node* insert_node(Node* root, int key, int parentValue, int* ok) {
     return root;
 }
 
-static void print_tree(Node* root, int depth) {
-    if (!root) return;
+static void print_tree_recursive(Node* node, int depth, int* isLastPath) {
+    if (!node) return;
 
-    for (int i = 0; i < depth; i++) printf("  ");
-    printf("%d\n", root->key);
-
-    Node* child = root->firstChild;
-    while (child) {
-        print_tree(child, depth + 1);
-        child = child->nextSibling;
+    if (depth == 0) {
+        printf("%d\n", node->key);
+    } else {
+        for (int i = 0; i < depth - 1; i++) {
+            if (isLastPath[i]) {
+                printf("    ");
+            } else {
+                printf("|   ");
+            }
+        }
+        if (isLastPath[depth - 1]) {
+            printf("`-- ");
+        } else {
+            printf("|-- ");
+        }
+        printf("%d\n", node->key);
     }
+
+    Node* child = node->firstChild;
+    while (child) {
+        Node* next = child->nextSibling;
+        isLastPath[depth] = (next == NULL);
+        print_tree_recursive(child, depth + 1, isLastPath);
+        child = next;
+    }
+}
+
+static void print_tree(Node* root, int depth) {
+    (void)depth;
+    int isLastPath[256] = {0};
+    print_tree_recursive(root, 0, isLastPath);
 }
 
 static void free_subtree(Node* root) {
