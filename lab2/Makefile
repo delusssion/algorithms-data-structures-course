@@ -1,13 +1,14 @@
-all: app tests
-
-app: main.c
-	gcc main.c -o app -lm
+main_prog: main.c
+	gcc -o main main.c -lm
 
 tests: tests.c main.c
-	gcc -DUNIT_TEST tests.c main.c -o tests -lm
+	gcc -DUNIT_TEST -o tests tests.c main.c -lm
 
-test: tests
+run: main_prog
+	./main
+
+run_tests: tests
 	./tests
 
 clean:
-	rm -f app tests
+	rm -f main tests
