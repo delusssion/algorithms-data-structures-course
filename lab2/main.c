@@ -336,14 +336,6 @@ int main(void) {
     reverse_table(&reverse_case);
     Table unsorted_case = copy_table(&base);
 
-    printf("Лабораторная работа №2. Сортировка и поиск\n");
-    printf("Номер в списке: 24\n");
-    printf("Метод сортировки: №8 — древесная сортировка с просеиванием (heap sort)\n");
-    printf("Структура таблицы: №6\n");
-    printf("Тип ключа: вещественный (double)\n");
-    printf("Хранение: отдельно\n");
-    printf("Минимальное число элементов: %d\n", MIN_ELEMENTS);
-
     process_case(&sorted_case, "Случай 1: таблица уже упорядочена");
     process_case(&reverse_case, "Случай 2: таблица в обратном порядке");
     process_case(&unsorted_case, "Случай 3: таблица неупорядочена");
