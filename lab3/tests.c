@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
 #define MAX_TOKENS 100
 #define MAX_TOKEN_LEN 50
 #define MAX_EXPR_LEN 500
 
+// Типы токенов
 typedef enum {
     TOKEN_NUMBER,
     TOKEN_VARIABLE,
@@ -15,21 +17,20 @@ typedef enum {
     TOKEN_RPAREN
 } TokenType;
 
+// Структура токена
 typedef struct {
     TokenType type;
     char value[MAX_TOKEN_LEN];
 } Token;
 
+// Узел дерева выражений
 typedef struct Node {
     char value[MAX_TOKEN_LEN];
     struct Node *left;
     struct Node *right;
 } Node;
 
-typedef struct {
-    Node *root;
-} ExpressionTree;
-
+// Приоритеты операторов
 int get_precedence(const char *op) {
     if (strcmp(op, "+") == 0 || strcmp(op, "-") == 0) return 1;
     if (strcmp(op, "*") == 0 || strcmp(op, "/") == 0) return 2;
@@ -37,11 +38,13 @@ int get_precedence(const char *op) {
     return 0;
 }
 
+// Ассоциативность операторов (1 - левая, 0 - правая)
 int is_left_associative(const char *op) {
     if (strcmp(op, "^") == 0) return 0;
     return 1;
 }
 
+// Проверка, является ли строка числом
 int is_number(const char *str) {
     for (int i = 0; str[i] != '\0'; i++) {
         if (!isdigit(str[i])) return 0;
@@ -49,6 +52,7 @@ int is_number(const char *str) {
     return 1;
 }
 
+// Проверка, является ли строка переменной
 int is_variable(const char *str) {
     for (int i = 0; str[i] != '\0'; i++) {
         if (!isalpha(str[i]) && !isdigit(str[i])) return 0;
@@ -56,6 +60,7 @@ int is_variable(const char *str) {
     return isalpha(str[0]);
 }
 
+// Создание нового узла
 Node* create_node(const char *value) {
     Node *node = (Node*)malloc(sizeof(Node));
     strncpy(node->value, value, MAX_TOKEN_LEN - 1);
@@ -65,6 +70,7 @@ Node* create_node(const char *value) {
     return node;
 }
 
+// Копирование узла (глубокая копия)
 Node* copy_node(Node *node) {
     if (node == NULL) return NULL;
 
@@ -74,6 +80,7 @@ Node* copy_node(Node *node) {
     return new_node;
 }
 
+// Освобождение памяти дерева
 void free_tree(Node *node) {
     if (node == NULL) return;
     free_tree(node->left);
@@ -81,17 +88,20 @@ void free_tree(Node *node) {
     free(node);
 }
 
+// Разбиение строки на токены
 int tokenize(const char *expression, Token tokens[]) {
     int token_count = 0;
     int i = 0;
     int len = strlen(expression);
 
     while (i < len && token_count < MAX_TOKENS) {
+        // Пропускаем пробелы
         while (i < len && expression[i] == ' ') i++;
         if (i >= len) break;
 
         char ch = expression[i];
 
+        // Число
         if (isdigit(ch)) {
             int j = 0;
             while (i < len && isdigit(expression[i]) && j < MAX_TOKEN_LEN - 1) {
@@ -101,6 +111,7 @@ int tokenize(const char *expression, Token tokens[]) {
             tokens[token_count].type = TOKEN_NUMBER;
             token_count++;
         }
+        // Переменная
         else if (isalpha(ch)) {
             int j = 0;
             while (i < len && (isalnum(expression[i]) || expression[i] == '_') && j < MAX_TOKEN_LEN - 1) {
@@ -110,6 +121,7 @@ int tokenize(const char *expression, Token tokens[]) {
             tokens[token_count].type = TOKEN_VARIABLE;
             token_count++;
         }
+        // Оператор или скобка
         else if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^' || ch == '(' || ch == ')') {
             tokens[token_count].value[0] = ch;
             tokens[token_count].value[1] = '\0';
@@ -130,6 +142,7 @@ int tokenize(const char *expression, Token tokens[]) {
     return token_count;
 }
 
+// Применение оператора к операндам
 void apply_operator(Node *operand_stack[], int *operand_top,
                     char operator_stack[], int *operator_top) {
     if (*operator_top < 0 || *operand_top < 1) {
@@ -148,6 +161,7 @@ void apply_operator(Node *operand_stack[], int *operand_top,
     operand_stack[++(*operand_top)] = op_node;
 }
 
+// Парсинг выражения в дерево
 Node* parse_expression(const char *expression) {
     Token tokens[MAX_TOKENS];
     int token_count = tokenize(expression, tokens);
@@ -219,112 +233,20 @@ Node* parse_expression(const char *expression) {
     return operand_stack[0];
 }
 
+// Проверка, является ли узел листом
 int is_leaf(Node *node) {
     return node != NULL && node->left == NULL && node->right == NULL;
 }
 
-void to_infix_helper(Node *node, const char *parent_op, int is_right_child, char *result) {
-    if (node == NULL) return;
-
-    if (is_leaf(node)) {
-        strcat(result, node->value);
-        return;
-    }
-
-    int needs_parens = 0;
-    if (strlen(parent_op) > 0) {
-        int current_prec = get_precedence(node->value);
-        int parent_prec = get_precedence((char*)parent_op);
-
-        if (current_prec < parent_prec) {
-            needs_parens = 1;
-        } else if (current_prec == parent_prec) {
-            if (is_right_child && is_left_associative(node->value)) {
-                needs_parens = 1;
-            }
-        }
-    }
-
-    if (needs_parens) {
-        strcat(result, "(");
-    }
-
-    to_infix_helper(node->left, node->value, 0, result);
-
-    strcat(result, " ");
-    strcat(result, node->value);
-    strcat(result, " ");
-
-    to_infix_helper(node->right, node->value, 1, result);
-
-    if (needs_parens) {
-        strcat(result, ")");
-    }
-}
-
-char* to_infix(Node *node) {
-    static char result[MAX_EXPR_LEN];
-    result[0] = '\0';
-
-    if (node == NULL) return result;
-
-    to_infix_helper(node, "", 0, result);
-
-    if (result[0] == ' ') {
-        memmove(result, result + 1, strlen(result));
-    }
-
-    return result;
-}
-
-void print_tree_helper(Node *node, int level, const char *prefix) {
-    if (node == NULL) return;
-
-    for (int i = 0; i < level; i++) {
-        printf("    ");
-    }
-    printf("%s%s\n", prefix, node->value);
-
-    if (node->left != NULL || node->right != NULL) {
-        if (node->left) {
-            print_tree_helper(node->left, level + 1, "L--- ");
-        } else {
-            for (int i = 0; i <= level; i++) printf("    ");
-            printf("L--- None\n");
-        }
-
-        if (node->right) {
-            print_tree_helper(node->right, level + 1, "R--- ");
-        } else {
-            for (int i = 0; i <= level; i++) printf("    ");
-            printf("R--- None\n");
-        }
-    }
-}
-
-void print_tree(Node *node) {
-    printf("Root: %s\n", node->value);
-    if (node->left != NULL || node->right != NULL) {
-        if (node->left) {
-            print_tree_helper(node->left, 1, "L--- ");
-        } else {
-            printf("    L--- None\n");
-        }
-
-        if (node->right) {
-            print_tree_helper(node->right, 1, "R--- ");
-        } else {
-            printf("    R--- None\n");
-        }
-    }
-}
-
+// Трансформация дерева: a ^ (b - c) → a ^ b / a ^ c
 Node* transform(Node *node) {
     if (node == NULL) return NULL;
 
+    // Рекурсивно преобразуем поддеревья
     node->left = transform(node->left);
     node->right = transform(node->right);
 
+    // Проверяем паттерн: ^ с правым дочерним элементом (-)
     if (strcmp(node->value, "^") == 0 &&
         node->right != NULL &&
         strcmp(node->right->value, "-") == 0 &&
@@ -334,18 +256,22 @@ Node* transform(Node *node) {
         Node *b = node->right->left;
         Node *c = node->right->right;
 
+        // Создаем a ^ b
         Node *pow_ab = create_node("^");
         pow_ab->left = copy_node(a);
         pow_ab->right = copy_node(b);
 
+        // Создаем a ^ c
         Node *pow_ac = create_node("^");
         pow_ac->left = copy_node(a);
         pow_ac->right = copy_node(c);
 
+        // Создаем деление: (a ^ b) / (a ^ c)
         Node *div = create_node("/");
         div->left = pow_ab;
         div->right = pow_ac;
 
+        // Освобождаем старое поддерево
         free_tree(node);
 
         return div;
@@ -354,51 +280,112 @@ Node* transform(Node *node) {
     return node;
 }
 
-void run_tests() {
-    const char *test_cases[] = {
-        "a ^ (b - c)",
-        "2 ^ (3 - 1)",
-        "x ^ (y - z) + 5",
-        "(a + b) ^ (c - d)",
-        "a ^ b - c",
-        "a ^ (b + c)"
-    };
+// ==================== ТЕСТЫ ====================
 
-    int num_tests = sizeof(test_cases) / sizeof(test_cases[0]);
+// Тест 1: Проверка создания узла
+void test_create_node() {
+    printf("Test 1: Create node... ");
 
-    printf("============================================================\n");
-    printf("Лабораторная работа 3. Вариант 26\n");
-    printf("Преобразование: a ^ (b - c) → a ^ b / a ^ c\n");
-    printf("============================================================\n\n");
+    Node *node = create_node("test");
+    assert(node != NULL);
+    assert(strcmp(node->value, "test") == 0);
+    assert(node->left == NULL);
+    assert(node->right == NULL);
 
-    for (int i = 0; i < num_tests; i++) {
-        printf("Исходное выражение: %s\n", test_cases[i]);
-
-        Node *root = parse_expression(test_cases[i]);
-        if (root == NULL) {
-            printf("Ошибка при парсинге выражения\n");
-            printf("------------------------------------------------------------\n\n");
-            continue;
-        }
-
-        printf("\nДерево до преобразования:\n");
-        print_tree(root);
-
-        root = transform(root);
-
-        printf("\nДерево после преобразования:\n");
-        print_tree(root);
-
-        char *result = to_infix(root);
-        printf("\nРезультат: %s\n", result);
-
-        printf("------------------------------------------------------------\n\n");
-
-        free_tree(root);
-    }
+    free(node);
+    printf("PASSED\n");
 }
 
+// Тест 2: Проверка приоритета операторов
+void test_operator_precedence() {
+    printf("Test 2: Operator precedence... ");
+
+    assert(get_precedence("+") == 1);
+    assert(get_precedence("-") == 1);
+    assert(get_precedence("*") == 2);
+    assert(get_precedence("/") == 2);
+    assert(get_precedence("^") == 3);
+
+    printf("PASSED\n");
+}
+
+// Тест 3: Проверка парсинга простого выражения
+void test_parse_simple_expression() {
+    printf("Test 3: Parse simple expression (a + b)... ");
+
+    Node *root = parse_expression("a + b");
+    assert(root != NULL);
+    assert(strcmp(root->value, "+") == 0);
+    assert(root->left != NULL);
+    assert(strcmp(root->left->value, "a") == 0);
+    assert(root->right != NULL);
+    assert(strcmp(root->right->value, "b") == 0);
+
+    free_tree(root);
+    printf("PASSED\n");
+}
+
+// Тест 4: Проверка трансформации выражения a ^ (b - c)
+void test_transform_expression() {
+    printf("Test 4: Transform expression (a ^ (b - c))... ");
+
+    Node *root = parse_expression("a ^ (b - c)");
+    assert(root != NULL);
+    assert(strcmp(root->value, "^") == 0);
+
+    // Применяем трансформацию
+    root = transform(root);
+
+    // После трансформации корень должен быть "/"
+    assert(root != NULL);
+    assert(strcmp(root->value, "/") == 0);
+
+    // Левый ребенок должен быть "^" (a ^ b)
+    assert(root->left != NULL);
+    assert(strcmp(root->left->value, "^") == 0);
+
+    // Правый ребенок должен быть "^" (a ^ c)
+    assert(root->right != NULL);
+    assert(strcmp(root->right->value, "^") == 0);
+
+    free_tree(root);
+    printf("PASSED\n");
+}
+
+// Тест 5: Проверка, что выражение без паттерна не меняется
+void test_no_transform_without_pattern() {
+    printf("Test 5: No transform without pattern (a + b)... ");
+
+    Node *root = parse_expression("a + b");
+    assert(root != NULL);
+    assert(strcmp(root->value, "+") == 0);
+
+    // Применяем трансформацию (должна остаться без изменений)
+    root = transform(root);
+
+    // Корень должен остаться "+"
+    assert(root != NULL);
+    assert(strcmp(root->value, "+") == 0);
+
+    free_tree(root);
+    printf("PASSED\n");
+}
+
+// Главная функция запуска всех тестов
 int main() {
-    run_tests();
+    printf("========================================\n");
+    printf("Running unit tests for lab3\n");
+    printf("========================================\n\n");
+
+    test_create_node();
+    test_operator_precedence();
+    test_parse_simple_expression();
+    test_transform_expression();
+    test_no_transform_without_pattern();
+
+    printf("\n========================================\n");
+    printf("All tests PASSED!\n");
+    printf("========================================\n");
+
     return 0;
 }
