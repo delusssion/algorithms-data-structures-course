@@ -1,0 +1,43 @@
+1 alpha 1.1
+1 beta 2.2
+1 gamma 3.3
+1 delta 4.4
+1 eps 5.5
+1 zeta 6.6
+1 eta 7.7
+1 theta 8.8
+1 iota 9.9
+1 kappa 10.1
+1 lam 11.2
+1 mu 12.3
+1 nu 13.4
+1 xi 14.5
+1 omicr 15.6
+1 pi 16.7
+1 rho 17.8
+1 sigma 18.9
+1 tau 19.0
+1 ups 20.1
+1 phi 21.2
+1 chi 22.3
+1 psi 23.4
+1 omega 24.5
+3
+4 alpha
+4 mu
+4 xyz
+2 gamma
+2 delta
+2 eps
+3
+1 abc 100.0
+1 xyz 200.0
+3
+2 alpha
+2 beta
+2 eta
+2 theta
+2 iota
+3
+4 kappa
+2 notkey
