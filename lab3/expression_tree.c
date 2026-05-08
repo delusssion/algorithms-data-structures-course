@@ -26,10 +26,6 @@ typedef struct Node {
     struct Node *right;
 } Node;
 
-typedef struct {
-    Node *root;
-} ExpressionTree;
-
 int get_precedence(const char *op) {
     if (strcmp(op, "+") == 0 || strcmp(op, "-") == 0) return 1;
     if (strcmp(op, "*") == 0 || strcmp(op, "/") == 0) return 2;
