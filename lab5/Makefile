@@ -1,8 +1,8 @@
 main: floyd_warshall.c
 	gcc -o main floyd_warshall.c
 
-tests: tests.c
-	gcc -o tests tests.c
+tests: tests.cpp
+	g++ -std=c++17 -o tests tests.cpp -I/opt/homebrew/opt/googletest/include -L/opt/homebrew/opt/googletest/lib -lgtest -lgtest_main
 
 run: main
 	./main
